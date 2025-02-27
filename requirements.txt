@@ -7,6 +7,6 @@ pip-tools==7.4.1
 pipdeptree==2.25.0
 tinycss2==1.4.0
 yarg==0.1.9
--e ./image3d_utils
--e ./face_recognition_arcface
--e ./face_recognition_fr3dnet
+./image3d_utils/dist/image3d_utils-0.0.0-py3-none-any.whl
+./face_recognition_arcface/dist/face_recognition_arcface-0.0.0-py3-none-any.whl
+./face_recognition_fr3dnet/dist/face_recognition_fr3dnet-0.0.0-py3-none-any.whl

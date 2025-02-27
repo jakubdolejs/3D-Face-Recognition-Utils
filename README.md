@@ -11,11 +11,34 @@ Utility library for face recognition testing and file conversion
     python3 -m venv .venv
     source .venv/bin/activate
     pip install ".[dev]"
-    python3 scripts/build.py
+    python scripts/build.py
+    python -m build
     deactivate
     cd ..
     ```
-2. Install dependencies:
+2. Build `face_recognition_arcface`:
+
+    ```shell
+    cd face_recognition_arcface
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install ".[dev]"
+    python -m build
+    deactivate
+    cd ..
+    ```
+3. Build `face_recognition_fr3dnet`:
+
+    ```shell
+    cd face_recognition_fr3dnet
+    python3 -m venv .venv
+    source .venv/bin/activate
+    pip install ".[dev]"
+    python -m build
+    deactivate
+    cd ..
+    ```
+4. Install dependencies:
 
     ```shell
     python3 -m venv .venv
