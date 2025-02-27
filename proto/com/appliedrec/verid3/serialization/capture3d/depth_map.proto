@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "com/appliedrec/verid3/serialization/common/pointf.proto";
+
+package com.appliedrec.verid3.serialization.capture3d;
+
+option swift_prefix = "";
+
+message DepthMap {
+    bytes data = 1;
+    int32 width = 2;
+    int32 height = 3;
+    int32 bytes_per_row = 4;
+    int32 bits_per_element = 5;
+    com.appliedrec.verid3.serialization.common.PointF principal_point = 6;
+    com.appliedrec.verid3.serialization.common.PointF focal_length = 7;
+    repeated float lens_distortion_lookup_table = 8;
+    com.appliedrec.verid3.serialization.common.PointF lens_distortion_center = 9;
+}

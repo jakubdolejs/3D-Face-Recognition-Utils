@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package com.appliedrec.verid3.serialization.capture3d;
+
+option swift_prefix = "";
+
+import "com/appliedrec/verid3/serialization/capture3d/depth_map.proto";
+
+message Image3D {
+    bytes jxl = 1;
+    DepthMap depth_map = 2;
+}
