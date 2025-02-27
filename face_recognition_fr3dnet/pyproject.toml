@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools-scm", "pybind11"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "face_recognition_fr3dnet"
+dynamic = ["version"]
+description = "3D face recognition library using Fr3dNet model"
+dependencies = [
+    "numpy==1.24",
+    "opencv-python",
+    "scipy",
+    "image3d_utils",
+    "torch",
+    "torchvision",
+    "msgpack"
+]
+requires-python = ">=3.11"
+
+[tool.setuptools]
+packages = ["face_recognition_fr3dnet"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+face_recognition_fr3dnet = ["models/fr3dnet.pt"]
+
+[project.optional-dependencies]
+dev = ["pybind11>=2.13.6,<3.0.0", "tox", "pytest", "pytest-testdox", "matplotlib", "build"]
