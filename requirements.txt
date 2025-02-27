@@ -1,0 +1,12 @@
+docopt==0.6.2
+ipython==8.12.3
+nbconvert==7.16.6
+open3d==0.19.0
+opencv-python==4.11.0.86
+pip-tools==7.4.1
+pipdeptree==2.25.0
+tinycss2==1.4.0
+yarg==0.1.9
+-e ./image3d_utils
+-e ./face_recognition_arcface
+-e ./face_recognition_fr3dnet

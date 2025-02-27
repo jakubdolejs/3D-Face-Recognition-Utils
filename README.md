@@ -20,7 +20,7 @@ Utility library for face recognition testing and file conversion
     ```shell
     python3 -m venv .venv
     source .venv/bin/activate
-    pip install ".[dev]"
+    pip install -r requirements.txt
     ```
 
 ## Scripts
