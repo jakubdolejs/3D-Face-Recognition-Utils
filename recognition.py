@@ -107,7 +107,7 @@ def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, m
             if pbar:
                 pbar.set_description_str(f"Invalid engine: {engine}")
 
-def compare_templates(engine: FaceRecEngine, files, max_depth:int=56, crop_size:int=112):
+def compare_templates(engine: FaceRecEngine, files, output_dir, max_depth:int=56, crop_size:int=112):
     recognition = recognition_engines[engine]
     templates = load_templates(engine, files, max_depth, crop_size)
     genuine_pairs, impostor_pairs = build_pairs(templates)
@@ -187,7 +187,7 @@ def compute_scores(pairs, compare_faces):
         scores.append(score)
     return scores
 
-def plot_roc(genuine_scores, impostor_scores):
+def plot_roc(genuine_scores, impostor_scores, output_dir):
     """
     Plot ROC curve and compute AUC & EER.
     """
@@ -213,6 +213,8 @@ def plot_roc(genuine_scores, impostor_scores):
     eer_threshold = thresholds[np.nanargmin(np.abs(fnr - fpr))]
     eer = fpr[np.nanargmin(np.abs(fnr - fpr))]
 
+    out_file = output_dir / "ROC.png"
+
     plt.figure(figsize=(8, 6))
     plt.plot(fpr, tpr, color='blue', label=f'ROC curve (AUC = {roc_auc:.4f})')
     plt.plot([0, 1], [0, 1], color='gray', linestyle='--')
@@ -221,10 +223,11 @@ def plot_roc(genuine_scores, impostor_scores):
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.legend(loc='lower right')
-    plt.show()
+    plt.savefig(str(out_file.resolve()))
 
     print(f"AUC: {roc_auc:.4f}")
     print(f"EER: {eer:.4f}")
+    print(f"ROC curve saved in: {str(out_file.resolve())}")
 
 def compute_rank1_accuracy(templates, compare_faces):
     """
@@ -313,7 +316,7 @@ if __name__ == "__main__":
     if file_path.is_dir():
         files = list(file_path.rglob(args.incl))
         if args.cmd == "compare_templates":
-            compare_templates(engine, files, args.max_depth, args.crop_size)
+            compare_templates(engine, files, file_path, args.max_depth, args.crop_size)
         elif args.cmd == "rank1":
             rank_1(engine, files, args.max_depth, args.crop_size)
         else:
