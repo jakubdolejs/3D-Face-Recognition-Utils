@@ -4,6 +4,8 @@ Utility library for face recognition testing and file conversion
 
 ## Installation
 
+### To run and build on local system
+
 1. Build `image3d_utils`:
 
     ```shell
@@ -46,22 +48,33 @@ Utility library for face recognition testing and file conversion
     pip install -r requirements.txt
     ```
 
+### To run from a Docket container
+
+1. Ensure Docker is installed on your system.
+2. In the project's main folder (the one that contains Dockerfile) run:
+
+    ```
+    docker build -t rec-utils:latest .
+    ```
+
 ## Scripts
+
+If you've built the Docker image you can run the scripts from the Docker host. The API is the same but instead of using `python recognition.py` use `./recognition.sh` and instead of `python ptc.py` use `./ptc.sh`.
+
+For example, to create FR3DNet model input images run:
+
+```
+./recognition.sh create_model_input -e fr3dnet -i "*.bin" -c 160 -d 56 -o /path/to/directory/with/bin/files
+```
 
 ### Face recognition
 
-```
-usage: recognition.py [-h] -e {arcface,fr3dnet} [-i INCL] [-o] {create_model_input,extract_templates,compare_templates,rank1} ... file_path
+#### Create model input and save it as png files
 
-Application for testing face recognition engines.
+```
+usage: recognition.py create_model_input [-h] -e {arcface,fr3dnet} [-i INCL] [-c CROP_SIZE] [-d MAX_DEPTH] [-o] file_path
 
 positional arguments:
-  {create_model_input,extract_templates,compare_templates,rank1}
-                        Sub-command help
-    create_model_input  Create model input and save it as png files
-    extract_templates   Extract face templates and save them as npy files
-    compare_templates   Compare templates and plot a ROC curve
-    rank1               Compute rank-1 accuracy
   file_path             Path to a directory or to a point cloud, image package or png file
 
 options:
@@ -70,30 +83,95 @@ options:
                         Face recognition engine
   -i INCL, --include INCL
                         Pattern of files to include
+  -c CROP_SIZE, --crop_size CROP_SIZE
+                        Crop the point cloud to square with side of this size (mm). Only applicable if engine is fr3dnet.
+  -d MAX_DEPTH, --max_depth MAX_DEPTH
+                        Maximum depth of point cloud (mm). Only applicable if engine is fr3dnet.
   -o, --overwrite       Overwrite existing files
-  ```
+```
+
+#### Extract face templates and save them as npy files
+
+```
+usage: recognition.py extract_templates [-h] -e {arcface,fr3dnet} [-i INCL] [-c CROP_SIZE] [-d MAX_DEPTH] [-o] file_path
+
+positional arguments:
+  file_path             Path to a directory or to a point cloud, image package or png file
+
+options:
+  -h, --help            show this help message and exit
+  -e {arcface,fr3dnet}, --engine {arcface,fr3dnet}
+                        Face recognition engine
+  -i INCL, --include INCL
+                        Pattern of files to include
+  -c CROP_SIZE, --crop_size CROP_SIZE
+                        Crop the point cloud to square with side of this size (mm). Only applicable if engine is fr3dnet.
+  -d MAX_DEPTH, --max_depth MAX_DEPTH
+                        Maximum depth of point cloud (mm). Only applicable if engine is fr3dnet.
+  -o, --overwrite       Overwrite existing files
+```
+
+#### Compare face templates
+
+```
+usage: recognition.py compare_templates [-h] -e {arcface,fr3dnet} [-i INCL] [-c CROP_SIZE] [-d MAX_DEPTH] file_path
+
+positional arguments:
+  file_path             Path to a directory or to a point cloud, image package or png file
+
+options:
+  -h, --help            show this help message and exit
+  -e {arcface,fr3dnet}, --engine {arcface,fr3dnet}
+                        Face recognition engine
+  -i INCL, --include INCL
+                        Pattern of files to include
+  -c CROP_SIZE, --crop_size CROP_SIZE
+                        Crop the point cloud to square with side of this size (mm). Only applicable if engine is fr3dnet.
+  -d MAX_DEPTH, --max_depth MAX_DEPTH
+                        Maximum depth of point cloud (mm). Only applicable if engine is fr3dnet.
+```
+
+#### Calculate rank 1 accuracy
+
+```
+usage: recognition.py rank1 [-h] -e {arcface,fr3dnet} [-i INCL] [-c CROP_SIZE] [-d MAX_DEPTH] file_path
+
+positional arguments:
+  file_path             Path to a directory or to a point cloud, image package or png file
+
+options:
+  -h, --help            show this help message and exit
+  -e {arcface,fr3dnet}, --engine {arcface,fr3dnet}
+                        Face recognition engine
+  -i INCL, --include INCL
+                        Pattern of files to include
+  -c CROP_SIZE, --crop_size CROP_SIZE
+                        Crop the point cloud to square with side of this size (mm). Only applicable if engine is fr3dnet.
+  -d MAX_DEPTH, --max_depth MAX_DEPTH
+                        Maximum depth of point cloud (mm). Only applicable if engine is fr3dnet.
+```
 
 #### Examples
 
 - Generate FR3DNet model input from .bin files in the current folder and its subfolders and save it as png files in the same folder as the source .bin files. Overwrite png files that already exist.
 
     ```
-    python recognition.py -i "*.bin" -e fr3dnet -o create_model_input .
+    python recognition.py create_model_input -i "*.bin" -e fr3dnet -o .
     ```
 - Create face ArcFace templates from .bin files in the current folder and its subfolders and save them as npy files in the same folder as the source .bin files. Do not overwrite existing files.
 
     ```
-    python recognition.py -i "*.bin" -e arcface extract_templates .
+    python recognition.py extract_templates -i "*.bin" -e arcface .
     ```
 - Compare FR3DNet face templates in the current folder and its subfolders and show a chart with a ROC curve. The npy input files are expected to be in folders named after the subject.
 
     ```
-    python recognition.py -i "*-template-fr3dnet.npy" -e fr3dnet compare_templates .
+    python recognition.py compare_templates -i "*-template-fr3dnet.npy" -e fr3dnet .
     ```
 - Calculate and display rank-1 accuracy from ArcFace templates in the current folder and its subfolders and print the result in stdout. The npy input files are expected to be in folders named after the subject.
 
     ```
-    python recognition.py -i "*-template-arcface.npy" -e arcface rank1 .
+    python recognition.py rank1 -i "*-template-arcface.npy" -e arcface .
     ```
 
 ### Conversion
