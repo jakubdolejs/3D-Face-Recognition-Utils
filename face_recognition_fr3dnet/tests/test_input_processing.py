@@ -9,93 +9,36 @@ import os
 @pytest.mark.describe('Test input processing')
 class TestInputProcessing:
 
-    @pytest.mark.it('Test correct face rotation')
-    def test_correct_face_rotation(self, image_packages):
-        package = next(filter(lambda x: x.stem == "jd-tilted", image_packages.get("001", [])), None)
-        if package:
-            dae = prepare_model_input(package, False, 0.08)
-            bgr = cv2.cvtColor(dae, cv2.COLOR_RGB2BGR)
-            cv2.imshow("RGB", bgr)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-
-    @pytest.mark.it('Test prepare inference input')
-    def test_prepare_input(self, image_packages):
-        max_img_count = max(len(packages) for packages in image_packages.values())
-        hstacks = []
-        for subject, packages in image_packages.items():
-            images = []
-            blank = None
-            for i in range(max_img_count):
-                imgstack = []
-                for mask_face in [True, False]:
-                    for max_depth in [None, 0.08]:
-                        if i < len(packages):
-                            dae = prepare_model_input(packages[i], mask_face, max_depth)
-                            if blank is None:
-                                blank = np.zeros_like(dae)
-                        elif blank is not None:
-                            dae = blank
-                        else:
-                            continue
-                        imgstack.append(dae)
-                if i < len(packages):
-                    img3d, face = decode_package(packages[i])
-                    image = decodeJXL(img3d.jxl)
-                    box_size = np.sqrt((face.right_eye.y - face.left_eye.y) ** 2 + (face.right_eye.x - face.left_eye.x) ** 2) * 2.25
-                    scale = float(blank.shape[1]) / box_size
-                    image = np.array(image.pixels, dtype=np.uint8).reshape((image.height, image.width, 3))
-                    size = (int(image.shape[1]*scale),int(image.shape[0]*scale))
-                    image = cv2.resize(image, size, interpolation=cv2.INTER_LINEAR)
-                    centre_x, centre_y = int(face.nose_tip.x * scale), int(face.nose_tip.y * scale)
-                    half_size = int(blank.shape[1] // 2)
-                    image = image[centre_y - half_size:centre_y + half_size, centre_x - half_size:centre_x + half_size]
-                    imgstack.append(image)
-
-                images.append(cv2.vconcat(imgstack))
-            hstacks.append(cv2.hconcat(images))
-        if len(hstacks) == 0:
-            return
-        vstack = cv2.vconcat(hstacks)
-        bgr = cv2.cvtColor(vstack, cv2.COLOR_RGB2BGR)
-        cv2.imshow("RGB", bgr)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    @pytest.mark.parametrize("mask_face, max_depth", [
-        (True, None),
-        (True, 0.08),
-        (False, None),
-        (False, 0.08)
+    @pytest.mark.parametrize("crop_size, max_depth, mask_face", [
+        (0.112, 0.056, False),
+        (0.160, 0.080, False),
+        (0.112, 0.056, True),
+        (0.160, 0.080, True)
     ])
-    @pytest.mark.it('Test ptc2dae function')
-    def test_ptc2dae(self, image_package_path, mask_face, max_depth):
-        ptc = point_cloud_from_package(image_package_path, mask_face, max_depth)
-        depth, azimuth, elevation = ptc2dae(ptc)
-        rgb = np.stack((elevation, azimuth, depth), axis=-1)
-        top_row = cv2.cvtColor(cv2.hconcat([depth, azimuth]), cv2.COLOR_GRAY2BGR)
-        bottom_row = cv2.hconcat([cv2.cvtColor(elevation, cv2.COLOR_GRAY2BGR), rgb])
-        img = cv2.vconcat([top_row, bottom_row])
-        cv2.imshow(f"Mask face: {mask_face}, max depth: {max_depth}", img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    @pytest.mark.it("Test create input from bin file")
+    def test_create_input(self, image_packages, crop_size, max_depth, mask_face):
+        for subject, packages in image_packages.items():
+            package = packages[0]
+            dae = prepare_model_input(package, max_depth, crop_size, mask_face)
+            assert isinstance(dae, np.ndarray)
+            assert dae.shape == (160,160,3)
 
     @pytest.mark.it('Test prepare input from point cloud')
     def test_prepare_input_from_point_cloud(self, point_cloud_with_nose_tip):
-        ptc, _ = point_cloud_with_nose_tip
-        dae = prepare_model_input(ptc)
-        assert dae is not None
-        bgr = cv2.cvtColor(dae, cv2.COLOR_RGB2BGR)
-        cv2.imshow("RGB", bgr)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        ptc, nose = point_cloud_with_nose_tip
+        nose = refine_nose_coordinate(ptc, nose, 0.05)
+        ptc = set_point_cloud_origin(ptc, nose)
+        dae = prepare_model_input(ptc, 0.112, 0.056)
+        assert isinstance(dae, np.ndarray)
+        assert dae.shape == (160,160,3)
+        assert dae[80,80,0] == 255
 
     @pytest.mark.it('Test prepare input from synthetic point cloud')
     def test_prepare_input_from_synthetic_point_cloud(self, script_dir):
         ptc = o3d.io.read_point_cloud(os.path.join(script_dir, "data/subjects/700000/expr_000.ply"))
         ptc = np.asarray(ptc.points, dtype=np.float32)
         ptc *= 0.001
-        ptc[:, 2] = -ptc[:, 2]
+        ptc[:, 1] = -ptc[:, 1]
         dae = prepare_model_input(ptc)
         assert dae is not None
         depth, azimuth, elevation  =np.transpose(dae, (2,0,1))
@@ -120,9 +63,9 @@ class TestInputProcessing:
         dae = prepare_model_input(ptc)
         bgr = cv2.cvtColor(dae, cv2.COLOR_RGB2BGR)
         cv2.imwrite('masked.png', bgr)
-        cv2.imshow('Masked', bgr)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # cv2.imshow('Masked', bgr)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
 
 
 def write_ply_file(point_cloud, file_name):

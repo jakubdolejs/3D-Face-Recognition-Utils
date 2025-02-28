@@ -1,0 +1,9 @@
+**/.vscode
+**/.venv
+**/.gitignore
+**/.benchmarks
+**/.pytest_cache
+**/dist
+**/build
+**/__pycache__
+**/*.egg-info

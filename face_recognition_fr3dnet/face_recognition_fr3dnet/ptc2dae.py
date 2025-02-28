@@ -3,8 +3,12 @@ from scipy.interpolate import griddata
 from scipy.spatial import Delaunay
 import cv2
 import open3d as o3d
+from .typing import DAE
+from image3d_utils import PointCloud
+from typing import Tuple
+from nptyping import NDArray, Shape, UInt8
 
-def ptc2dae(point_cloud, grid_size = 224):
+def ptc2dae(point_cloud: PointCloud, grid_size: int = 224) -> Tuple[NDArray[Shape["*"],UInt8],NDArray[Shape["*"],UInt8],NDArray[Shape["*"],UInt8]]:
     """
     Convert the pointcloud of a 3D scan to Depth, Azimuth and Elevation map.
     """

@@ -29,8 +29,7 @@ def set_point_cloud_origin(point_cloud: PointCloud, centre: Vertex) -> PointClou
     """
     Adjusts a point cloud so that its (0,0,0) is at the supplied reference point.
     """
-    x_ref, y_ref, z_ref = centre
-    return np.array([(x - x_ref, y - y_ref, z - z_ref) for x, y, z in point_cloud], dtype=np.float32)
+    return point_cloud - centre
 
 def crop_point_cloud(point_cloud: PointCloud, min_x = float('-inf'), max_x = float('inf'), min_y = float('-inf'), max_y = float('inf'), min_z = float('-inf'), max_z = float('inf')):
     ptc = np.array(point_cloud)
@@ -82,7 +81,7 @@ def rotate_point_cloud(point_cloud: PointCloud, axis: str, angle: int) -> PointC
 
     return np.array(rotated_points, dtype=np.float32)
 
-def refine_nose_coordinate(point_cloud: PointCloud, nose_coord: Vertex, radius: float) -> Vertex:
+def refine_nose_coordinate(point_cloud: PointCloud, nose_coord: Vertex, radius: float=0.05) -> Vertex:
     """
     Finds the closest point to the camera within a given radius of the detected nose coordinate.
 
@@ -109,7 +108,7 @@ def refine_nose_coordinate(point_cloud: PointCloud, nose_coord: Vertex, radius: 
 
 
 def correct_point_cloud_orientation(point_cloud: PointCloud, left_eye: Vertex, right_eye: Vertex, nose_tip: Vertex) -> PointCloud:
-    nose_tip = refine_nose_coordinate(point_cloud, nose_tip, 0.005)
+    nose_tip = refine_nose_coordinate(point_cloud, nose_tip, 0.05)
     left_eye = np.array([left_eye[0] - nose_tip[0], left_eye[1] - nose_tip[1], left_eye[2] - nose_tip[2]], dtype=np.float32)
     right_eye = np.array([right_eye[0] - nose_tip[0], right_eye[1] - nose_tip[1], right_eye[2] - nose_tip[2]], dtype=np.float32)
     point_cloud = set_point_cloud_origin(point_cloud, nose_tip)

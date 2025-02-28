@@ -10,6 +10,7 @@ import msgpack
 import importlib.resources as pkg_resources
 import os
 import cv2
+from .typing import ModelInputSource, DAE, FaceTemplate
 
 class FaceRecognition():
 
@@ -24,18 +25,18 @@ class FaceRecognition():
         self.recognizer.load_state_dict(torch.load(model_file_path, map_location="cpu", weights_only=False))
         self.recognizer.eval()
     
-    def create_face_template(self, *args) -> NDArray[Shape["*"], Float32]:
+    def create_face_template(self, source: ModelInputSource, max_depth:float=0.56, crop_size:float=0.112, mask_face:bool=False) -> FaceTemplate:
         """Create a face template from the provided image data."""
-        dae = prepare_model_input(*args)
+        dae = prepare_model_input(source, max_depth, crop_size, mask_face)
         return self.create_face_template_from_dae(dae)
     
     @overload
-    def create_face_template_from_dae(self, dae: NDArray[Shape["160, 160, 3"], Float32]) -> NDArray[Shape["*"], Float32]: ...
+    def create_face_template_from_dae(self, dae:DAE) -> FaceTemplate: ...
 
     @overload
-    def create_face_template_from_dae(self, dae: Union[str,os.PathLike]) -> NDArray[Shape["*"], Float32]: ...
+    def create_face_template_from_dae(self, dae: Union[str,os.PathLike]) -> FaceTemplate: ...
         
-    def create_face_template_from_dae(self, dae: Union[NDArray[Shape["160, 160, 3"], Float32], Union[str,os.PathLike]]) -> NDArray[Shape["*"], Float32]:
+    def create_face_template_from_dae(self, dae: Union[DAE, Union[str,os.PathLike]]) -> FaceTemplate:
         if isinstance(dae, (str,os.PathLike)):
             dae = cv2.imread(dae)
             dae = cv2.cvtColor(dae, cv2.COLOR_BGR2RGB)
@@ -47,7 +48,7 @@ class FaceRecognition():
         result = out1.squeeze(dim=-1).squeeze(dim=-1)
         return np.array(result.detach().tolist()[0], dtype=np.float32)
 
-    def compare_face_templates(self, challenge: NDArray[Shape["*"], Float32], templates: List[NDArray[Shape["*"], Float32]]) -> List[float]:
+    def compare_face_templates(self, challenge: FaceTemplate, templates: List[FaceTemplate]) -> List[float]:
         """Compare a challenge face template to other templates and return 
         scores in an list with indices matching the input list"""
         scores = []
@@ -57,7 +58,7 @@ class FaceRecognition():
             scores.append(score)
         return scores
 
-    def serialize_face_template(self, template: NDArray[Shape["*"], Float32]) -> bytes:
+    def serialize_face_template(self, template: FaceTemplate) -> bytes:
         """Serialize a face template to a byte array"""
         template_dict = {
             "version": self.version,
@@ -65,7 +66,7 @@ class FaceRecognition():
         }
         return msgpack.dumps(template_dict)
 
-    def deserialize_face_template(self, template: bytes) -> NDArray[Shape["*"], Float32]:
+    def deserialize_face_template(self, template: bytes) -> FaceTemplate:
         """Deserialize a face template from a byte array"""
         template_dict = msgpack.loads(template)
         if "version" not in template_dict:
