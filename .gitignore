@@ -1,0 +1,6 @@
+.venv
+**/__pycache__
+face_recognition_fr3dnet.egg-info
+.vscode
+build
+dist
