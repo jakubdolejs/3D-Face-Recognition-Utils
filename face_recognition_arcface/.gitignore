@@ -1,5 +1,0 @@
-.venv
-.vscode
-build
-**/__pycache__
-face_recognition_arcface.egg-info
