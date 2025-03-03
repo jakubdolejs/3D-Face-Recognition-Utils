@@ -115,7 +115,7 @@ def compare_templates(engine: FaceRecEngine, files, output_dir, max_depth:int=56
         return recognition.compare_face_templates(face1, [face2])[0]
     genuine_scores = compute_scores(genuine_pairs, compare_faces)
     impostor_scores = compute_scores(impostor_pairs, compare_faces)
-    plot_roc(genuine_scores, impostor_scores)
+    plot_roc(genuine_scores, impostor_scores, output_dir)
 
 def rank_1(engine: FaceRecEngine, files, max_depth:int=56, crop_size:int=112):
     recognition = recognition_engines[engine]
