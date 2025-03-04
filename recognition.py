@@ -20,7 +20,7 @@ recognition_engines = {
     FaceRecEngine.FR3DNET: Fr3dnetFaceRec()
 }
 
-def prep_model_input(engine: FaceRecEngine, file, pbar=None, overwrite=False, max_depth:int=56, crop_size:int=112):
+def prep_model_input(engine: FaceRecEngine, file, pbar=None, overwrite=False, crop_radius:int=90, grid_size:int=110):
     if pbar:
         pbar.set_postfix_str(file.name)
     recognition = recognition_engines[engine]
@@ -44,17 +44,17 @@ def prep_model_input(engine: FaceRecEngine, file, pbar=None, overwrite=False, ma
         case FaceRecEngine.FR3DNET:
             if pbar:
                 pbar.set_description_str("Preparing FR3DNet input")
-            output_file = file.with_stem(f"{file.stem}-{crop_size}-{max_depth}mm-fr3dnet").with_suffix(".png")
+            output_file = file.with_stem(f"{file.stem}-grid{grid_size}mm-radius{crop_radius}mm-fr3dnet").with_suffix(".png")
             if output_file.exists() and not overwrite:
                 return output_file
             if file.suffix.lower() == ".bin":
-                dae = fr3dnet_prep_input(file, max_depth * 0.001, crop_size * 0.001)
+                dae = fr3dnet_prep_input(file, crop_radius * 0.001, grid_size)
             elif file.suffix.lower() == ".npy":
                 ptc = np.load(file)
-                dae = fr3dnet_prep_input(ptc, max_depth * 0.001, crop_size * 0.001)
+                dae = fr3dnet_prep_input(ptc, crop_radius * 0.001, grid_size)
             elif file.suffix.lower() == ".ply":
                 ptc = point_cloud_from_ply(file)
-                dae = fr3dnet_prep_input(ptc, max_depth * 0.001, crop_size * 0.001)
+                dae = fr3dnet_prep_input(ptc, crop_radius * 0.001, grid_size)
             else:
                 raise ValueError(f"Invalid file type: {file.suffix}")
             cv2.imwrite(output_file, cv2.cvtColor(dae, cv2.COLOR_RGB2BGR))
@@ -63,7 +63,7 @@ def prep_model_input(engine: FaceRecEngine, file, pbar=None, overwrite=False, ma
             if pbar:
                 pbar.set_description_str(f"Invalid engine: {engine}")
 
-def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, max_depth:int=56, crop_size:int=112):
+def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, crop_radius:int=90, grid_size:int=110):
     if pbar:
         pbar.set_postfix_str(file.name)
     recognition = recognition_engines[engine]
@@ -83,11 +83,11 @@ def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, m
         case FaceRecEngine.FR3DNET:
             if pbar:
                 pbar.set_description_str("Extracting FR3DNet template")
-            output_file = file.with_stem(f"{file.stem}-{crop_size}-{max_depth}mm-template-fr3dnet").with_suffix(".npy")
+            output_file = file.with_stem(f"{file.stem}-grid{grid_size}mm-radius{crop_radius}mm-template-fr3dnet").with_suffix(".npy")
             if output_file.exists() and not overwrite:
                 return output_file
             if file.suffix.lower() == ".bin":
-                template = recognition.create_face_template(file, max_depth * 0.001, crop_size * 0.001)
+                template = recognition.create_face_template(file, crop_radius * 0.001, grid_size)
             elif file.suffix.lower() == ".png":
                 template = recognition.create_face_template_from_dae(file)
             elif file.suffix.lower() == ".ply":
@@ -95,10 +95,10 @@ def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, m
                 ptc = np.array(ptc.points, dtype=np.float32)
                 ptc *= 0.001
                 ptc[:,1] *= -1
-                template = recognition.create_face_template(ptc, max_depth * 0.001, crop_size * 0.001)
+                template = recognition.create_face_template(ptc, crop_radius * 0.001, grid_size)
             elif file.suffix.lower() == ".npy":
                 ptc = np.load(file)
-                template = recognition.create_face_template(ptc, max_depth * 0.001, crop_size * 0.001)
+                template = recognition.create_face_template(ptc, crop_radius * 0.001, grid_size)
             else:
                 raise ValueError(f"Invalid file type: {file.suffix}")
             np.save(output_file, template)
@@ -107,9 +107,9 @@ def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, m
             if pbar:
                 pbar.set_description_str(f"Invalid engine: {engine}")
 
-def compare_templates(engine: FaceRecEngine, files, output_dir, max_depth:int=56, crop_size:int=112):
+def compare_templates(engine: FaceRecEngine, files, output_dir, crop_radius:int=90, grid_size:int=110):
     recognition = recognition_engines[engine]
-    templates = load_templates(engine, files, max_depth, crop_size)
+    templates = load_templates(engine, files, crop_radius, grid_size)
     genuine_pairs, impostor_pairs = build_pairs(templates)
     def compare_faces(face1, face2):
         return recognition.compare_face_templates(face1, [face2])[0]
@@ -117,9 +117,9 @@ def compare_templates(engine: FaceRecEngine, files, output_dir, max_depth:int=56
     impostor_scores = compute_scores(impostor_pairs, compare_faces)
     plot_roc(genuine_scores, impostor_scores, output_dir)
 
-def rank_1(engine: FaceRecEngine, files, max_depth:int=56, crop_size:int=112):
+def rank_1(engine: FaceRecEngine, files, crop_radius:int=90):
     recognition = recognition_engines[engine]
-    templates = load_templates(engine, files, max_depth, crop_size)
+    templates = load_templates(engine, files, crop_radius)
     def compare_faces(face1, face2):
         return recognition.compare_face_templates(face1, [face2])[0]
     compute_rank1_accuracy(templates, compare_faces)
@@ -131,7 +131,7 @@ def point_cloud_from_ply(file):
     ptc[:,1] *= -1
     return ptc
 
-def load_templates(engine: FaceRecEngine, files, max_depth:int=56, crop_size:int=112):
+def load_templates(engine: FaceRecEngine, files, crop_radius:int=90, grid_size:int=110):
     recognition = recognition_engines[engine]
     templates = {}
     for file in tqdm(files, leave=False, desc="Loading face templates"):
@@ -148,7 +148,7 @@ def load_templates(engine: FaceRecEngine, files, max_depth:int=56, crop_size:int
             if engine == FaceRecEngine.ARCFACE:
                 template = recognition.create_face_template(file)
             elif engine == FaceRecEngine.FR3DNET:
-                template = recognition.create_face_template(file, max_depth * 0.001, crop_size * 0.001)
+                template = recognition.create_face_template(file, crop_radius * 0.001, grid_size)
         if template is None:
             continue
         if subject not in templates.keys():
@@ -283,18 +283,18 @@ if __name__ == "__main__":
             help="Pattern of files to include"
         )
         subparser.add_argument(
-            "-c", "--crop_size",
+            "-c", "--crop_radius",
             type=int,
-            default=112,
-            dest="crop_size",
-            help="Crop the point cloud to square with side of this size (mm). Only applicable if engine is fr3dnet."
+            default=90,
+            dest="crop_radius",
+            help="Crop the point cloud to a sphere with this radius (mm). Only applicable if engine is fr3dnet."
         )
         subparser.add_argument(
-            "-d", "--max_depth",
+            "-g", "--grid_size",
             type=int,
-            default=56,
-            dest="max_depth",
-            help="Maximum depth of point cloud (mm). Only applicable if engine is fr3dnet."
+            default=110,
+            dest="grid_size",
+            help="Grid size for gridfit algorithm (mm). Only applicable if engine is fr3dnet."
         )
     for subparser in [extract_templates_parser, model_input_parser]:
         subparser.add_argument(
@@ -307,8 +307,8 @@ if __name__ == "__main__":
     
     invalid_cmd = lambda e, f, p, o: print("Invalid command")
     commands = {
-        "create_model_input": lambda e, f, p: prep_model_input(e, f, p, args.overwrite, args.max_depth, args.crop_size),
-        "extract_templates": lambda e, f, p: extract_templates(e, f, p, args.overwrite, args.max_depth, args.crop_size)
+        "create_model_input": lambda e, f, p: prep_model_input(e, f, p, args.overwrite, args.crop_radius, args.grid_size),
+        "extract_templates": lambda e, f, p: extract_templates(e, f, p, args.overwrite, args.crop_radius, args.grid_size)
     }
     cmd = commands.get(args.cmd, invalid_cmd)
     file_path = Path(args.file_path)
@@ -316,11 +316,11 @@ if __name__ == "__main__":
     if file_path.is_dir():
         files = list(file_path.rglob(args.incl))
         if args.cmd == "compare_templates":
-            compare_templates(engine, files, file_path, args.max_depth, args.crop_size)
+            compare_templates(engine, files, file_path, args.crop_radius, args.grid_size)
         elif args.cmd == "rank1":
-            rank_1(engine, files, args.max_depth, args.crop_size)
+            rank_1(engine, files, args.crop_radius)
         else:
-            with tqdm(total=len(files)) as pbar:
+            with tqdm(total=len(files), desc="Processing") as pbar:
                 for file in files:
                     try:
                         cmd(engine, file, pbar)

@@ -1,0 +1,9 @@
+[submodule "dependencies/image3d_utils"]
+	path = dependencies/image3d_utils
+	url = https://github.com/AppliedRecognition/3D-Image-Utils-Python.git
+[submodule "dependencies/face_recognition_fr3dnet"]
+	path = dependencies/face_recognition_fr3dnet
+	url = https://github.com/AppliedRecognition/Face-Recognition-FR3DNet.git
+[submodule "dependencies/face_recognition_arcface"]
+	path = dependencies/face_recognition_arcface
+	url = https://github.com/AppliedRecognition/Face-Recognition-ArcFaceV24-Python.git
