@@ -91,7 +91,7 @@ def extract_templates(engine: FaceRecEngine, file, pbar=None, overwrite=False, c
             elif file.suffix.lower() == ".png":
                 template = recognition.create_face_template_from_dae(file)
             elif file.suffix.lower() == ".ply":
-                ptc = o3d.io.read_point_cloud(file_path)
+                ptc = o3d.io.read_point_cloud(file)
                 ptc = np.array(ptc.points, dtype=np.float32)
                 ptc *= 0.001
                 ptc[:,1] *= -1
